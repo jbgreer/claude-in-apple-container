@@ -54,8 +54,8 @@ ENV LC_ALL=en_US.UTF-8
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/node/.claude && \
-  chown -R node:node /workspace /home/node/.claude
+RUN mkdir -p /workspace /home/$USERNAME/.claude && \
+  chown -R $USERNAME:$USERNAME /workspace /home/$USERNAME/.claude
 
 WORKDIR /workspace
 
@@ -71,7 +71,7 @@ USER node
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 # ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin:/home/node/.rbenv/bin:/home/node/.rbenv/shims
-ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin
+ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/$USERNAME/.local/bin
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
@@ -94,8 +94,8 @@ RUN curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
 COPY init-firewall.sh entrypoint.sh /usr/local/bin/
 USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-  chmod 0440 /etc/sudoers.d/node-firewall
+  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/$USERNAME-firewall && \
+  chmod 0440 /etc/sudoers.d/$USERNAME-firewall
 
 USER node
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
