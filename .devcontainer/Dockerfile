@@ -6,11 +6,11 @@ ARG TZ
 ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
-ARG RUBY_VERSION=3.4.8
 
 # Install basic development tools, browser dependencies and iptables/ipset
 RUN apt-get update && apt-get install -y --no-install-recommends \
   aggregate \
+  curl \
   dnsutils \
   fzf \
   gh \
@@ -21,46 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   iptables \
   jq \
   less \
-  libasound2 \
-  libatk-bridge2.0-0 \
-  libatk1.0-0 \
-  libatspi2.0-0 \
-  libcups2 \
-  libdbus-1-3 \
-  libgbm1 \
-  libgtk-3-0 \
-  libnspr4 \
-  libnss3 \
-  libx11-xcb1 \
-  libxcomposite1 \
-  libxcursor1 \
-  libxdamage1 \
-  libxfixes3 \
-  libxkbcommon0 \
-  libxrandr2 \
+  locales \
   man-db \
   nano \
+  neovim \
   procps \
+  ripgrep \
   sudo \
   unzip \
-  locales \
-  vim \
   zsh \
   && sed -i '/en_US.UTF-8/s/^# //' /etc/locale.gen && locale-gen \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install rbenv build dependencies for compiling Ruby
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  autoconf \
-  bison \
-  libffi-dev \
-  libgdbm-dev \
-  libncurses5-dev \
-  libreadline-dev \
-  libssl-dev \
-  libyaml-dev \
-  rustc \
-  zlib1g-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Use legacy iptables as the apple/container kernel doesn't support the nftables kernel API
@@ -100,56 +70,25 @@ USER node
 
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin:/home/node/.rbenv/bin:/home/node/.rbenv/shims
+# ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin:/home/node/.rbenv/bin:/home/node/.rbenv/shims
+ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
 
 # Set the default editor and visual
-ENV EDITOR=vim
-ENV VISUAL=vim
+ENV EDITOR=nvim
+ENV VISUAL=nvim
 
 # Container environment (moved from devcontainer.json containerEnv)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
 
-# Install rbenv and ruby-build
-RUN git clone https://github.com/rbenv/rbenv.git /home/node/.rbenv && \
-  git clone https://github.com/rbenv/ruby-build.git /home/node/.rbenv/plugins/ruby-build && \
-  echo 'eval "$(rbenv init - zsh)"' >> /home/node/.zshrc && \
-  echo 'eval "$(rbenv init - bash)"' >> /home/node/.bashrc && \
-  rbenv install "${RUBY_VERSION}" && \
-  rbenv global "${RUBY_VERSION}"
-
 # Prevent VS Code's forwarded SSH agent from leaking into shell sessions
 RUN echo 'unset SSH_AUTH_SOCK' >> /home/node/.zshrc
 
-# Pre-configure VS Code machine-level settings (applies to any workspace)
-RUN mkdir -p /home/node/.vscode-server/data/Machine && \
-  cat <<'EOF' > /home/node/.vscode-server/data/Machine/settings.json
-{
-  "editor.formatOnSave": true,
-  "terminal.integrated.defaultProfile.linux": "zsh",
-  "terminal.integrated.profiles.linux": {
-    "bash": {
-      "path": "bash",
-      "icon": "terminal-bash"
-    },
-    "zsh": {
-      "path": "zsh"
-    }
-  },
-  "terminal.integrated.env.linux": {
-    "SSH_AUTH_SOCK": null
-  }
-}
-EOF
-
 # Install Claude
 RUN curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
-
-# Install Playwright
-RUN npm install -g playwright && playwright install
 
 # Copy and set up firewall and entrypoint scripts
 COPY init-firewall.sh entrypoint.sh /usr/local/bin/
@@ -157,7 +96,7 @@ USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
-USER node
 
+USER node
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["zsh"]
