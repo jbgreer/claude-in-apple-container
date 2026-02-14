@@ -37,8 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
 # Ensure default node user has access to /usr/local/share
-RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
+#RUN mkdir -p /usr/local/share/npm-global && \
+#  chown -R node:node /usr/local/share
 
 ARG USERNAME=node
 
@@ -69,9 +69,10 @@ RUN ARCH=$(dpkg --print-architecture) && \
 USER node
 
 # Install global packages
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+#ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 # ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/node/.local/bin:/home/node/.rbenv/bin:/home/node/.rbenv/shims
-ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/$USERNAME/.local/bin
+#ENV PATH=$PATH:/usr/local/share/npm-global/bin:/home/$USERNAME/.local/bin
+ENV PATH=$PATH:/home/$USERNAME/.local/bin
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
