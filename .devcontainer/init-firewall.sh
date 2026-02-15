@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Copied from https://github.com/anthropics/claude-code/blob/main/.devcontainer/init-firewall.sh on 2026-02-03
+# Original https://github.com/anthropics/claude-code/blob/main/.devcontainer/init-firewall.sh on 2026-02-03
+# Copied  https://github.com/richardTowers/claude-code/blob/main/.devcontainer/init-firewall.sh
+# 2026-02-14 jbgreer: removed a few domains from whitelist
+#
 
 set -euo pipefail # Exit on error, undefined vars, and pipeline failures
 IFS=$'\n\t'       # Stricter word splitting
@@ -66,14 +69,9 @@ while read -r cidr; do
   ipset add allowed-domains "$cidr"
 done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
 
-#"" Resolve and add other allowed domains
-#
+# Resolve and add other allowed domains
 for domain in \
-  "registry.npmjs.org" \
-  "rubygems.org" \
-  "index.rubygems.org" \
   "api.anthropic.com" \
-  "sentry.io" \
   "statsig.anthropic.com" \
   "statsig.com"; do
   echo "Resolving $domain..."
@@ -124,11 +122,11 @@ iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
 echo "Firewall configuration complete"
 echo "Verifying firewall rules..."
-if curl --connect-timeout 5 https://example.com >/dev/null 2>&1; then
-  echo "ERROR: Firewall verification failed - unable to reach https://example.com"
+if curl --connect-timeout 5 https://www.foo.com >/dev/null 2>&1; then
+  echo "ERROR: Firewall verification failed - able to reach https://www.foo.com"
   exit 1
 else
-  echo "Firewall verification passed - able to reach https://example.com as expected"
+  echo "Firewall verification passed - unable to reach https://www.foo.com as expected"
 fi
 
 # Verify GitHub API access
