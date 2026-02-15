@@ -1,8 +1,9 @@
 # Original from https://github.com/anthropics/claude-code/blob/main/.devcontainer/Dockerfile on 2026-02-03
-# Copiedfrom https://github.com/richardTowers/claude-code/blob/main/.devcontainer/Dockerfile
-# 2026-02-14 jbgreer: removed Ruby, switched to Debian Trixie-slim base
+# Copied from https://github.com/richardTowers/claude-code/blob/main/.devcontainer/Dockerfile
+# 2026-02-14 jbgreer: removed Ruby, npm, switched to Debian Trixie-slim base
+# 2026-02-15 jbgreer:  trixie supports git-delta directly
 
-FROM debian:trixie-slim
+FROM debian:trixie
 
 ARG TZ
 ENV TZ="$TZ"
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fzf \
   gh \
   git \
+  git-delta \
   gnupg2 \
   iproute2 \
   ipset \
@@ -31,7 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   neovim \
   procps \
-  ripgrep \
   sudo \
   unzip \
   wget \
@@ -63,12 +64,6 @@ RUN mkdir -p /workspace /home/${USERNAME}/.claude && \
   chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME}/.claude
 
 WORKDIR /workspace
-
-#ARG GIT_DELTA_VERSION=0.18.2
-#RUN ARCH=$(dpkg --print-architecture) && \
-  #wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
-  #sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
-  #rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
 # Set up non-root user
 USER ${USERNAME}
