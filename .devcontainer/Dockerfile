@@ -3,7 +3,7 @@
 # 2026-02-14 jbgreer: removed Ruby, npm, switched to Debian Trixie-slim base
 # 2026-02-15 jbgreer:  trixie supports git-delta directly
 
-FROM debian:trixie
+FROM debian:trixie-slim
 
 ARG TZ
 ENV TZ="$TZ"
@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   neovim \
   procps \
   sudo \
+  tmux \
   unzip \
   wget \
   zsh \
@@ -68,7 +69,8 @@ WORKDIR /workspace
 # Set up non-root user
 USER ${USERNAME}
 
-ENV PATH=$PATH:/home/${USERNAME}/.local/bin
+# add .local/bin to path - required for claude
+ENV PATH=/home/${USERNAME}/.local/bin:$PATH
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
