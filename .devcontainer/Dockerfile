@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ipset \
   iptables \
   jq \
+  lazygit \
   less \
   locales \
   man-db \
@@ -34,6 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   neovim \
   procps \
   sudo \
+  starship \
+  stow \
   tmux \
   unzip \
   wget \
@@ -64,10 +67,19 @@ ENV DEVCONTAINER=true
 RUN mkdir -p /workspace /home/${USERNAME}/.claude && \
   chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME}/.claude
 
-WORKDIR /workspace
-
 # Set up non-root user
 USER ${USERNAME}
+
+# Download dotfiles and install via stow
+RUN mkdir -p /home/${USERNAME}/.config
+#RUN mkdir -p /home/${USERNAME}/Dotfiles && \
+  #chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/Dotfiles
+RUN git clone https://github.com/jbgreer/Dotfiles.git /home/${USERNAME}/Dotfiles && { cd /home/${USERNAME}/Dotfiles; git checkout container; }
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/Dotfiles
+RUN stow --verbose --dir=/home/${USERNAME}/Dotfiles nvim
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.config
+
+WORKDIR /workspace
 
 # add .local/bin to path - required for claude
 ENV PATH=/home/${USERNAME}/.local/bin:$PATH
@@ -87,6 +99,7 @@ RUN echo 'unset SSH_AUTH_SOCK' >> /home/${USERNAME}/.zshrc
 
 # Install Claude
 RUN curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
+#
 
 # Copy and set up firewall and entrypoint scripts
 COPY init-firewall.sh entrypoint.sh /usr/local/bin/
