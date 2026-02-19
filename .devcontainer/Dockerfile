@@ -77,29 +77,30 @@ RUN mkdir -p /home/${USERNAME}/.config
 RUN git clone https://github.com/jbgreer/Dotfiles.git /home/${USERNAME}/Dotfiles && { cd /home/${USERNAME}/Dotfiles; git checkout container; }
 RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/Dotfiles
 RUN stow --verbose --dir=/home/${USERNAME}/Dotfiles nvim
+RUN stow --verbose --dir=/home/${USERNAME}/Dotfiles starship
+RUN stow --verbose --dir=/home/${USERNAME}/Dotfiles tmux
+RUN stow --verbose --dir=/home/${USERNAME}/Dotfiles zsh
 RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.config
-
-WORKDIR /workspace
-
-# add .local/bin to path - required for claude
-ENV PATH=/home/${USERNAME}/.local/bin:$PATH
 
 # Set the default shell to zsh rather than sh
 ENV SHELL=/bin/zsh
+# PAM issues with this at the moment
+# RUN chsh --shell zsh claude
+
+# add .local/bin to path - required for claude
+ENV PATH=/home/${USERNAME}/.local/bin:$PATH
 
 # Set the default editor and visual
 ENV EDITOR=nvim
 ENV VISUAL=nvim
 
+WORKDIR /workspace
+
 # Container environment (moved from devcontainer.json containerEnv)
 ENV CLAUDE_CONFIG_DIR="/home/${USERNAME}/.claude"
 
-# Prevent forwarded SSH agent from leaking into shell sessions
-RUN echo 'unset SSH_AUTH_SOCK' >> /home/${USERNAME}/.zshrc
-
 # Install Claude
 RUN curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
-#
 
 # Copy and set up firewall and entrypoint scripts
 COPY init-firewall.sh entrypoint.sh /usr/local/bin/
@@ -110,4 +111,4 @@ RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh && \
 
 USER ${USERNAME}
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["zsh"]
+CMD ["/usr/bin/zsh"]
