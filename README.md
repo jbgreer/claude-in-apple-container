@@ -3,6 +3,8 @@
 An example running [Claude Code] inside an [apple/container], with support for
 [dev containers](https://containers.dev/)
 
+Forked from Richard Towers' [effort](https://github.com/richardTowers/claude-in-apple-container), removing Ruby, Microsoft Visual Code, changing base container, etc.
+
 ## Security
 
 An attempt is made to ensure that the container runtime is secure enough to run
@@ -17,7 +19,7 @@ isolation to the container
 (barring some allowed IPs, e.g. GitHub)
 - We `unset SSH_AUTH_SOCK` to work around the annoying behaviour of VSCode (and
 other IDE's) of forwarding the ssh agent into the container
-- The container runs as a non-root user (`node`, UID 1000), with password-less
+- The container runs as a non-root user (`claude`, UID 1000), with password-less
 sudo restricted to only `/usr/local/bin/init-firewall.sh`
 
 ## Prerequisites
@@ -26,28 +28,26 @@ You'll need:
 
 - an Apple Silicon device that's newfangled enough to run [apple/container]
 - a [Claude Code] subscription
-- VSCode with at least version 0.437 of the Dev Containers extension, with
-`Experimental Apple Container Support` enabled in the settings
 
 ## Tutorial
 
 1) Make sure the `apple/container` runtime is running with `container system start`
-2) Pull the pre-built container image (if you trust me):
+2) Pull the pre-built container image (if you trust Richard Towers):
 
-   ```
+   ```text
    container image pull ghcr.io/richardtowers/claude-in-apple-container/devcontainer:latest
    container image tag ghcr.io/richardtowers/claude-in-apple-container/devcontainer:latest claude-code-devcontainer:latest
    ```
 
    Or, if you prefer to build it yourself:
 
-   ```
+   ```text
    container build --memory 8g --tag claude-code-devcontainer --file .devcontainer/Dockerfile .devcontainer
    ```
 
 3) Optionally, copy the `claude-container` helper script onto your PATH:
 
-   ```
+   ```shell
    cp claude-container /usr/local/bin/
    ```
 
@@ -56,19 +56,19 @@ You'll need:
 
    **Using the helper script** — get an interactive zsh shell:
 
-   ```
+   ```text
    claude-container
    ```
 
    **Or, to start a detached container for use with VS Code:**
 
-   ```
+   ```text
    claude-container --devcontainer
    ```
 
    **Or, run the command directly:**
 
-   ```
+   ```text
    container run --name claude-code --memory 8g \
      --volume "$(pwd):/workspace" \
      --volume claude-code-bashhistory:/commandhistory \
@@ -78,12 +78,6 @@ You'll need:
 
    The named volumes persist shell history and Claude configuration across
    container restarts.
-
-5. If using `--devcontainer` mode (or the direct command), run the
-   `Dev Containers: Attach to Running Apple Container...`
-   command in VSCode.
-
-6. Use VSCode's built-in terminal to run yourself some Claude instances!
 
 You might feel okay using `--dangerously-skip-permissions` mode, as at least
 your local machine should be protected from what goes on inside the container
