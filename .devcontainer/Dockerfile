@@ -3,72 +3,46 @@
 # 2026-02-14 jbgreer: removed Ruby, npm, switched to Debian Trixie-slim base
 # 2026-02-15 jbgreer: debian trixie supports git-delta directly
 # 2026-03-05 jbgreer: mainly switch to herenow run style
+# 2026-03-05 jbgreer: minimize number of layers
 #
 
 FROM debian:trixie-slim
 
-# set timezone, locale editor and DEVCONTAINER in case we need to check
 ARG TZ="Etc/UTC"
-ENV TZ="$TZ" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 EDITOR=nvim VISUAL=nvim DEVCONTAINER=true
+ARG USERNAME=claude
+ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic development tools, dependencies and iptables/ipset
-# Use legacy iptables as the apple/container kernel doesn't support the nftables kernel API
+# set timezone, locale, editor, DEVCONTAINER, shell, path, and claude config dir
+ENV TZ="$TZ" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 EDITOR=nvim VISUAL=nvim DEVCONTAINER=true \
+    SHELL=/bin/zsh PATH=/home/${USERNAME}/.local/bin:${PATH} CLAUDE_CONFIG_DIR="/home/${USERNAME}/.claude"
+
+# Copy firewall and entrypoint scripts before the root RUN so chmod/sudoers
+# can be folded into the same layer as the package install.
+COPY init-firewall.sh entrypoint.sh /usr/local/bin/
+
+# Install basic development tools, dependencies and iptables/ipset.
+# Use legacy iptables as the apple/container kernel doesn't support the nftables kernel API.
+# Also creates the non-root user, sets up directories, and configures the firewall sudoer entry.
 RUN << EOF
   apt-get -qq update && apt-get -qq -y --no-install-recommends install \
-  aggregate \
-  apt-transport-https \
-  ca-certificates \
-  cidr \
-  curl \
-  dnsutils \
-  fzf \
-  gh \
-  git \
-  git-delta \
-  gnupg2 \
-  iproute2 \
-  ipset \
-  iptables \
-  jq \
-  lazygit \
-  less \
-  locales \
-  man-db \
-  nano \
-  neovim \
-  procps \
-  sudo \
-  starship \
-  stow \
-  tmux \
-  unzip \
-  wget \
-  zsh
+  aggregate apt-transport-https ca-certificates cidr curl dnsutils fzf gh \
+  git git-delta gnupg2 iproute2 ipset iptables jq lazygit less locales \
+  man-db nano neovim procps sudo starship stow tmux unzip wget zsh
   sed -i '/en_US.UTF-8/s/^# //' /etc/locale.gen && locale-gen
   apt-get -qq clean && rm -rf /var/lib/apt/lists/*
   update-alternatives --set iptables /usr/sbin/iptables-legacy && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+  adduser ${USERNAME}
+  mkdir /commandhistory && touch /commandhistory/.bash_history && chown -R ${USERNAME} /commandhistory
+  mkdir -p /workspace /home/${USERNAME}/.claude && chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME}/.claude
+  chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh
+  echo "${USERNAME} ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/${USERNAME}-firewall
+  chmod 0440 /etc/sudoers.d/${USERNAME}-firewall
 EOF
 
-ARG USERNAME=claude
-RUN adduser ${USERNAME}
-
-# Persist Bash history.
-RUN << EOF
-  mkdir /commandhistory
-  touch /commandhistory/.bash_history
-  chown -R ${USERNAME} /commandhistory
-EOF
-
-# create working directories and setup ownership
-RUN << EOF
-  mkdir -p /workspace /home/${USERNAME}/.claude
-  chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME}/.claude
-EOF
-
-# Switch to non-root user
 USER ${USERNAME}
+WORKDIR /workspace
 
-# Download dotfiles and install via stow
+# Download dotfiles via stow and install Claude Code
 RUN << EOF
   mkdir -p /home/${USERNAME}/.config
   git clone https://github.com/jbgreer/Dotfiles.git /home/${USERNAME}/Dotfiles && { cd /home/${USERNAME}/Dotfiles; git checkout container; }
@@ -78,27 +52,8 @@ RUN << EOF
   stow --verbose --dir=/home/${USERNAME}/Dotfiles tmux
   stow --verbose --dir=/home/${USERNAME}/Dotfiles zsh
   chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.config
+  curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
 EOF
 
-# Set the default shell to zsh, add ~/.local/bin to path for Claude
-ENV SHELL=/bin/zsh PATH=/home/${USERNAME}/.local/bin:${PATH}
-
-WORKDIR /workspace
-
-# Install Claude
-ENV CLAUDE_CONFIG_DIR="/home/${USERNAME}/.claude"
-ARG CLAUDE_CODE_VERSION=latest
-RUN curl -fsSL https://claude.ai/install.sh | TARGET=${CLAUDE_CODE_VERSION} bash
-
-# Copy and set up firewall and entrypoint scripts
-COPY init-firewall.sh entrypoint.sh /usr/local/bin/
-USER root
-RUN << EOF
-  chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh
-  echo "${USERNAME} ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/${USERNAME}-firewall
-  chmod 0440 /etc/sudoers.d/${USERNAME}-firewall
-EOF
-
-USER ${USERNAME}
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/bin/zsh"]
