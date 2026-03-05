@@ -7,8 +7,9 @@
 
 FROM debian:trixie-slim
 
-ARG TZ=Etc/UTC
-ENV TZ="$TZ"
+# set timezone, locale editor and DEVCONTAINER in case we need to check
+ARG TZ="Etc/UTC"
+ENV TZ="$TZ" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 EDITOR=nvim VISUAL=nvim DEVCONTAINER=true
 
 # Install basic development tools, dependencies and iptables/ipset
 # Use legacy iptables as the apple/container kernel doesn't support the nftables kernel API
@@ -58,11 +59,6 @@ RUN << EOF
   chown -R ${USERNAME} /commandhistory
 EOF
 
-# locale and DEVCONTAINER in case we need to check
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-ENV DEVCONTAINER=true
-
 # create working directories and setup ownership
 RUN << EOF
   mkdir -p /workspace /home/${USERNAME}/.claude
@@ -84,15 +80,8 @@ RUN << EOF
   chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.config
 EOF
 
-# Set the default shell to zsh
-ENV SHELL=/bin/zsh
-
-# add .local/bin to path - required for claude
-ENV PATH=/home/${USERNAME}/.local/bin:$PATH
-
-# Set default editor
-ENV EDITOR=nvim
-ENV VISUAL=nvim
+# Set the default shell to zsh, add ~/.local/bin to path for Claude
+ENV SHELL=/bin/zsh PATH=/home/${USERNAME}/.local/bin:${PATH}
 
 WORKDIR /workspace
 
