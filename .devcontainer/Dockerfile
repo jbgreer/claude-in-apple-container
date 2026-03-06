@@ -25,9 +25,49 @@ COPY init-firewall.sh entrypoint.sh /usr/local/bin/
 # Also creates the non-root user, sets up directories, and configures the firewall sudoer entry.
 RUN << EOF
   apt-get -qq update && apt-get -qq -y --no-install-recommends install \
-  aggregate apt-transport-https ca-certificates cidr curl dnsutils fzf gh \
-  git git-delta gnupg2 iproute2 ipset iptables jq lazygit less locales \
-  man-db nano neovim procps sudo starship stow tmux unzip wget zsh
+  aggregate \
+  apt-transport-https \
+  build-essential \
+  ca-certificates \
+  cidr \
+  curl \
+  direnv \
+  dnsutils \
+  du-dust \
+  eza \
+  fd-find \
+  fzf \
+  gh \
+  git \
+  git-delta \
+  glow \
+  gnupg2 \
+  hyperfine \
+  iproute2 \
+  ipset \
+  iptables \
+  jq \
+  just \
+  lazygit \
+  less \
+  locales \
+  man-db \
+  neovim \
+  pipx \
+  procps \
+  procs \
+  python3 \
+  python3-pip \
+  ripgrep \
+  sd \
+  sudo \
+  starship \
+  stow \
+  tmux \
+  unzip \
+  wget \
+  xh \
+  zsh
   sed -i '/en_US.UTF-8/s/^# //' /etc/locale.gen && locale-gen
   apt-get -qq clean && rm -rf /var/lib/apt/lists/*
   update-alternatives --set iptables /usr/sbin/iptables-legacy && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
